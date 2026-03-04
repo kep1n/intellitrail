@@ -3,6 +3,7 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+
 # C extensions
 *.so
 
@@ -208,3 +209,6 @@ marimo/_lsp/
 __marimo__/
 
 .claude/
+*.lock
+.idea/
+.planning/
