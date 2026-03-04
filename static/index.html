@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intellitrail</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header>
+    <h1>Intellitrail</h1>
+  </header>
+
+  <main class="layout">
+
+    <!-- LEFT: chat panel -->
+    <section class="chat-panel">
+      <div class="messages" id="messages">
+        <div class="message ai">
+          <div class="bubble">
+            <div class="bubble-text">Hi! I'm IntelliTrail, your mountain safety assistant.
+Ask me about a route or trail — you can type a name, upload a GPX file, or use voice.
+I can give you a GO / CAUTION / NO-GO verdict and answer questions about gear, conditions, and safety.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div id="gpx-chip" class="gpx-chip" hidden>
+          <span id="gpx-chip-name"></span>
+          <button id="gpx-chip-remove" title="Remove file">×</button>
+        </div>
+        <div class="input-row">
+          <label class="icon-btn attach-btn" title="Attach GPX file">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <input type="file" id="gpx-file-input" accept=".gpx">
+          </label>
+          <textarea id="message-input" placeholder="Ask about a route, conditions, gear…" rows="1"></textarea>
+          <button id="voice-btn" class="icon-btn" title="Hold to record voice">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button id="send-btn">Send</button>
+        </div>
+        <p id="voice-status" class="voice-status"></p>
+      </div>
+    </section>
+
+    <!-- RIGHT: results panel -->
+    <section class="results-panel" id="results-panel">
+      <div id="results-placeholder" class="results-placeholder">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5"><path d="M3 17l4-8 4 5 3-3 4 6"/><circle cx="18" cy="6" r="3"/></svg>
+        <p>Route analysis will appear here</p>
+      </div>
+
+      <div id="results-content" hidden>
+        <div id="verdict-badge" class="badge"></div>
+
+        <details id="section-trail-data">
+          <summary>Trail Data</summary>
+          <div id="content-trail-data" class="section-content trail-data-grid"></div>
+        </details>
+        <details id="section-risk-factors">
+          <summary>Risk Factors</summary>
+          <div id="content-risk-factors" class="section-content"></div>
+        </details>
+        <details id="section-reasoning">
+          <summary>Reasoning</summary>
+          <div id="content-reasoning" class="section-content"></div>
+        </details>
+        <details id="section-time-windows">
+          <summary>Time Windows</summary>
+          <div id="content-time-windows" class="section-content"></div>
+        </details>
+        <details id="section-elevation">
+          <summary>Elevation Context</summary>
+          <div id="content-elevation" class="section-content"></div>
+        </details>
+        <details id="section-alternatives">
+          <summary>Alternatives</summary>
+          <div id="content-alternatives" class="section-content"></div>
+        </details>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

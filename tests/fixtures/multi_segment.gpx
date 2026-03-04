@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Track One</name>
+    <trkseg>
+      <trkpt lat="42.000" lon="-3.000"><ele>1000.0</ele></trkpt>
+      <trkpt lat="42.001" lon="-3.001"><ele>1010.0</ele></trkpt>
+      <trkpt lat="42.002" lon="-3.002"><ele>1005.0</ele></trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>Track Two</name>
+    <trkseg>
+      <trkpt lat="42.010" lon="-3.010"><ele>1100.0</ele></trkpt>
+      <trkpt lat="42.011" lon="-3.011"><ele>1110.0</ele></trkpt>
+      <trkpt lat="42.012" lon="-3.012"><ele>1105.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
