@@ -345,6 +345,32 @@ function updateResultsPanel(data) {
   } else if (verdict === 'CAUTION' || verdict === 'NO-GO') {
     altEl.textContent = 'No alternatives found within 10 km.';
   }
+
+  // Physical difficulty
+  const diff = report.physical_difficulty || {};
+  if (diff.level) {
+    document.getElementById('content-difficulty').textContent = `${diff.level} — ${diff.description}`;
+    document.getElementById('section-difficulty').open = true;
+  }
+
+  // Estimated time
+  const ht = report.hiking_time || {};
+  if (ht.estimated_time_str) {
+    let htText = `Estimated: ${ht.estimated_time_str}`;
+    if (ht.sunset_time) htText += `\nSunset: ${ht.sunset_time}  |  Latest start: ${ht.latest_start_time}`;
+    document.getElementById('content-hiking-time').textContent = htText;
+    document.getElementById('section-hiking-time').open = true;
+  }
+
+  // Refuges & shelters
+  const refs = report.refuges || [];
+  const refEl = document.getElementById('content-refuges');
+  refEl.innerHTML = '';
+  if (refs.length) {
+    const md = refs.map(r => `- **${r.name}** (${r.type.replace('_', ' ')}) — ${r.distance_km} km`).join('\n');
+    renderMarkdown(refEl, md);
+    document.getElementById('section-refuges').open = true;
+  }
 }
 
 // ── Utilities ────────────────────────────────────────────────────────────────

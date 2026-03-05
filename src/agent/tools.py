@@ -19,10 +19,12 @@ from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import InjectedState
 from langgraph.types import Command
 
+from src.agent.difficulty import compute_physical_difficulty
 from src.agent.elevation_analysis import analyze_elevation
+from src.agent.hiking_time import estimate_hiking_time
 from src.agent.prompts import build_verdict_prompt
 from src.agent.wikiloc_scraper import ScraperError, is_wikiloc_route_url, scrape_geojson, scrape_metadata
-from src.alternatives.overpass import search_overpass
+from src.alternatives.overpass import search_overpass, search_refuges
 from src.config import Settings
 from src.ingestion.geojson_parser import parse_geojson_to_geometry
 from src.ingestion.gpx_parser import parse_gpx_bytes
@@ -164,10 +166,11 @@ def analyze_route(
     verdict_str = report.verdict.value
 
     # --- 5. Alternatives on CAUTION / NO-GO ---
+    centroid_lat = (geometry.bbox_min_lat + geometry.bbox_max_lat) / 2.0
+    centroid_lon = (geometry.bbox_min_lon + geometry.bbox_max_lon) / 2.0
+
     alternatives: list[dict] = []
     if verdict_str in ("CAUTION", "NO-GO"):
-        centroid_lat = (geometry.bbox_min_lat + geometry.bbox_max_lat) / 2.0
-        centroid_lon = (geometry.bbox_min_lon + geometry.bbox_max_lon) / 2.0
         try:
             alternatives = search_overpass(centroid_lat, centroid_lon, radius_m=10000)
         except Exception:
@@ -195,9 +198,24 @@ def analyze_route(
 
         alternatives = alternatives[:3]
 
-    # --- 6. Assemble report and ToolMessage summary ---
+    # --- 6. Refuges (always) ---
+    try:
+        refuges = search_refuges(centroid_lat, centroid_lon)
+    except Exception:
+        refuges = []
+
+    # --- 7. Hiking time estimate ---
+    hiking_time = estimate_hiking_time(geometry)
+
+    # --- 8. Physical difficulty ---
+    difficulty = compute_physical_difficulty(geometry)
+
+    # --- 9. Assemble report and ToolMessage summary ---
     report_dict = report.model_dump(mode="json")
     report_dict["alternatives"] = alternatives
+    report_dict["refuges"] = refuges
+    report_dict["hiking_time"] = hiking_time
+    report_dict["physical_difficulty"] = difficulty
 
     summary_lines = [f"**Verdict: {verdict_str}**", f"{report.summary}"]
 
@@ -231,6 +249,19 @@ def analyze_route(
     if alternatives:
         alt_names = [a.get("name", "unknown") for a in alternatives]
         summary_lines.append(f"Alternatives within 10 km: {', '.join(alt_names)}")
+
+    if difficulty.get("level"):
+        summary_lines.append(f"Physical difficulty: {difficulty['level']} — {difficulty['description']}")
+
+    if hiking_time.get("estimated_time_str"):
+        ht_line = f"Estimated time: {hiking_time['estimated_time_str']}"
+        if hiking_time.get("sunset_time"):
+            ht_line += f" | Sunset: {hiking_time['sunset_time']} | Latest start: {hiking_time['latest_start_time']}"
+        summary_lines.append(ht_line)
+
+    if refuges:
+        ref_names = [r["name"] for r in refuges[:3]]
+        summary_lines.append(f"Nearby refuges/shelters: {', '.join(ref_names)}")
 
     return Command(
         update={

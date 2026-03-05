@@ -14,6 +14,7 @@ Severity thresholds (apply to the route's maximum elevation):
 - Wind: CAUTION >50 km/h | NO-GO >80 km/h
 - Avalanche risk level (European 1-5 scale): CAUTION Level 3 | NO-GO Level 4 or 5
 - Active weather alerts (CAP severity → minimum verdict):
+  IMPORTANT: only apply these rules if the weather data contains an "## Active weather alerts" section. If that section is absent or says "No active alerts", there are NO formal alerts — do not infer or hallucinate alerts from wind speed, precipitation, or any other forecast values.
   - Minor (yellow): CAUTION minimum regardless of other conditions
   - Moderate (orange): CAUTION; upgrade to NO-GO if description indicates heavy rain accumulation (>30 mm/24 h), damaging wind, or dangerous temperature extremes
   - Severe or Extreme (red): NO-GO always
@@ -93,6 +94,13 @@ def _weather_summary(weather_data: dict | None) -> str:
                 parts.append("  " + " | ".join(fields))
     if wd.mountain:
         parts.append(f"\n### Mountain forecast — {wd.mountain.area_name}")
+        if wd.mountain.freezing_level or wd.mountain.wind_1500m:
+            fa_lines = []
+            if wd.mountain.freezing_level:
+                fa_lines.append(f"Freezing level (isocero): {wd.mountain.freezing_level}")
+            if wd.mountain.wind_1500m:
+                fa_lines.append(f"Wind at 1500m (v1500): {wd.mountain.wind_1500m}")
+            parts.append("  Free atmosphere: " + " | ".join(fa_lines))
         parts.append(wd.mountain.forecast_text[:2000])  # cap very long narratives
     if wd.avalanche:
         av = wd.avalanche
@@ -116,6 +124,8 @@ def _weather_summary(weather_data: dict | None) -> str:
             if parameters:
                 params_str = " | ".join(f"{k}={v}" for k, v in parameters.items())
                 parts.append(f"    Parameters: {params_str}")
+    else:
+        parts.append("\n### Active weather alerts\nNo active CAP alerts for this location.")
     if wd.missing_mountain_data:
         parts.append("\n### Mountain forecast: unavailable (non-fatal — municipal data present)")
     return "\n".join(parts) if parts else "Weather data returned empty fields."

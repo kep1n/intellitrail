@@ -124,10 +124,13 @@ def fetch_weather_data(
         if area_code:
             forecasts = scrape_mountain_forecasts(area_code, num_days=1)
             forecast_text = format_mountain_forecast_text(forecasts)
+            freezing_level, wind_1500m = _extract_free_atmosphere(forecasts)
             mountain = MountainForecast(
                 area_code=area_code,
                 area_name=area_code,
                 forecast_text=forecast_text,
+                freezing_level=freezing_level,
+                wind_1500m=wind_1500m,
             )
         # else: mountain is None — centroid outside all mountain zones
     except Exception:
@@ -214,6 +217,30 @@ def _fetch_pyrenean_snow_bulletin(area_code: str) -> AvalancheBulletin:
             raw_text="",
             unavailable_reason="fetch_failed",
         )
+
+
+def _extract_free_atmosphere(forecasts: dict) -> tuple[str | None, str | None]:
+    """Extract isocero (freezing level) and v1500 (wind at 1500m) from atmosferalibre sections.
+
+    Returns (freezing_level, wind_1500m) strings, or (None, None) if not found.
+    Uses the first day in the forecast dict that has free_atmosphere data.
+    """
+    for day_fc in forecasts.values():
+        if day_fc is None:
+            continue
+        sections = getattr(day_fc, "sections", {})
+        fa_items = sections.get("free_atmosphere", [])
+        freezing_level = None
+        wind_1500m = None
+        for item in fa_items:
+            h = item.header.lower()
+            if "isocero" in h or "freezing" in h:
+                freezing_level = item.text
+            elif "v1500" in h or "1500" in h:
+                wind_1500m = item.text
+        if freezing_level or wind_1500m:
+            return freezing_level, wind_1500m
+    return None, None
 
 
 def _parse_municipal_forecast(

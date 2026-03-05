@@ -43,7 +43,7 @@ Conversation guidelines:
 - If the verdict is CAUTION or NO-GO, proactively mention the alternatives found.
 - For gear or technique questions, use rag_query to ground your answer in safety documents.
 - If uncertain whether the user wants a full analysis or just a quick answer, ask.
-- Respond in the same language the user writes in (Spanish or English).
+- Always respond in English, regardless of the language of the user's message or the source data.
 """
 
 _INTENT_HINTS = {

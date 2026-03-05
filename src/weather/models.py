@@ -51,6 +51,8 @@ class MountainForecast(BaseModel):
     area_code: str  # e.g., "mad2"
     area_name: str
     forecast_text: str  # raw narrative from AEMET — NOT parsed
+    freezing_level: Optional[str] = None   # isocero — altitude where T=0°C (e.g. "2500 m")
+    wind_1500m: Optional[str] = None       # v1500  — wind at 1500 m (e.g. "NW 35 km/h")
 
 
 class AvalancheBulletin(BaseModel):
