@@ -16,9 +16,6 @@ import io
 import queue
 import sys
 
-import numpy as np
-import sounddevice as sd
-from scipy.io import wavfile
 from openai import OpenAI
 
 from src.config import Settings
@@ -50,6 +47,10 @@ def record_until_enter(sample_rate: int = 16000) -> io.BytesIO:
         if status:
             print(status, file=sys.stderr)
         q.put(indata.copy())
+
+    import numpy as np  # noqa: PLC0415
+    import sounddevice as sd  # noqa: PLC0415
+    from scipy.io import wavfile  # noqa: PLC0415
 
     print("Press Enter to start recording...")
     input()  # First Enter starts recording

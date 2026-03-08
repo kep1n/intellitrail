@@ -4,6 +4,7 @@ let selectedGpxFile = null;
 let abortController = null;
 let currentAiEl = null;      // the currently streaming AI message bubble
 let hasReceivedTokens = false;
+let currentTurnHasAnalysis = false;  // true only when analyze_route ran this turn
 
 // ── GPX attachment ──────────────────────────────────────────────────────────
 const gpxFileInput = document.getElementById('gpx-file-input');
@@ -26,6 +27,13 @@ document.getElementById('gpx-chip-remove').addEventListener('click', () => {
   selectedGpxFile = null;
   gpxFileInput.value = '';
   gpxChip.hidden = true;
+  if (currentThreadId) {
+    fetch('/api/clear-gpx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thread_id: currentThreadId }),
+    }).catch(() => {});
+  }
 });
 
 // ── Voice recording ─────────────────────────────────────────────────────────
@@ -186,11 +194,13 @@ function handleSseEvent(event, data) {
   switch (event) {
     case 'thread_id':
       currentThreadId = data.thread_id;
+      currentTurnHasAnalysis = false;
       break;
 
     case 'tool_start':
       ensureAiBubble();
       appendToolIndicator(data.tool);
+      if (data.tool === 'analyze_route') currentTurnHasAnalysis = true;
       break;
 
     case 'token':
@@ -205,7 +215,7 @@ function handleSseEvent(event, data) {
       break;
 
     case 'result':
-      if (data.verdict || data.report) updateResultsPanel(data);
+      if (currentTurnHasAnalysis && (data.verdict || data.report)) appendAnalysisCard(data);
       break;
 
     case 'error':
@@ -215,6 +225,7 @@ function handleSseEvent(event, data) {
 
     case 'done':
       finaliseAiBubble();
+      currentTurnHasAnalysis = false;
       break;
   }
 }
@@ -275,102 +286,124 @@ function appendErrorBubble(msg) {
   scrollToBottom();
 }
 
-// ── Results panel ────────────────────────────────────────────────────────────
-function updateResultsPanel(data) {
-  document.getElementById('results-placeholder').hidden = true;
-  document.getElementById('results-content').hidden = false;
-  document.getElementById('results-panel').scrollTop = 0;
-
-  const badge   = document.getElementById('verdict-badge');
-  const verdict = data.verdict || '';
-  badge.textContent = verdict;
-  badge.className = 'badge';
-  if (verdict === 'GO')      badge.classList.add('badge-go');
-  else if (verdict === 'NO-GO')   badge.classList.add('badge-no-go');
-  else if (verdict === 'CAUTION') badge.classList.add('badge-caution');
-
+// ── Inline analysis card ─────────────────────────────────────────────────────
+function appendAnalysisCard(data) {
+  const verdict   = data.verdict   || '';
   const report    = data.report    || {};
   const trailInfo = data.trail_info || null;
 
-  // Trail data
-  const trailEl = document.getElementById('content-trail-data');
-  trailEl.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'message result';
+
+  const card = document.createElement('div');
+  card.className = 'analysis-card';
+
+  // Verdict badge
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  badge.textContent = verdict;
+  if (verdict === 'GO')           badge.classList.add('badge-go');
+  else if (verdict === 'NO-GO')   badge.classList.add('badge-no-go');
+  else if (verdict === 'CAUTION') badge.classList.add('badge-caution');
+  card.appendChild(badge);
+
+  // Trail stats grid
   if (trailInfo && Object.values(trailInfo).some(v => v != null)) {
     const rows = [];
-    if (trailInfo.track_name)          rows.push(['Track',         trailInfo.track_name]);
-    if (trailInfo.trail_type)          rows.push(['Type',          trailInfo.trail_type]);
-    if (trailInfo.difficulty)          rows.push(['Difficulty',    trailInfo.difficulty]);
-    if (trailInfo.distance_km != null) rows.push(['Distance',      `${trailInfo.distance_km.toFixed(2)} km`]);
-    if (trailInfo.elevation_gain_m != null) rows.push(['Gain',     `${Math.round(trailInfo.elevation_gain_m)} m`]);
-    if (trailInfo.elevation_loss_m != null) rows.push(['Loss',     `${Math.round(trailInfo.elevation_loss_m)} m`]);
-    if (trailInfo.max_elevation_m != null)  rows.push(['Max alt',  `${Math.round(trailInfo.max_elevation_m)} m`]);
-    if (trailInfo.min_elevation_m != null)  rows.push(['Min alt',  `${Math.round(trailInfo.min_elevation_m)} m`]);
+    if (trailInfo.track_name)               rows.push(['Track',       trailInfo.track_name]);
+    if (trailInfo.trail_type)               rows.push(['Type',        trailInfo.trail_type]);
+    if (trailInfo.difficulty)               rows.push(['Difficulty',  trailInfo.difficulty]);
+    if (trailInfo.distance_km != null)      rows.push(['Distance',    `${trailInfo.distance_km.toFixed(2)} km`]);
+    if (trailInfo.elevation_gain_m != null) rows.push(['Gain',        `${Math.round(trailInfo.elevation_gain_m)} m`]);
+    if (trailInfo.elevation_loss_m != null) rows.push(['Loss',        `${Math.round(trailInfo.elevation_loss_m)} m`]);
+    if (trailInfo.max_elevation_m != null)  rows.push(['Max alt',     `${Math.round(trailInfo.max_elevation_m)} m`]);
+    if (trailInfo.min_elevation_m != null)  rows.push(['Min alt',     `${Math.round(trailInfo.min_elevation_m)} m`]);
     if (trailInfo.moving_time)              rows.push(['Moving time', trailInfo.moving_time]);
-    trailEl.innerHTML = rows.map(([label, value]) =>
-      `<div class="trail-stat"><span class="trail-label">${label}</span><span class="trail-value">${value}</span></div>`
+    const grid = document.createElement('div');
+    grid.className = 'trail-data-grid';
+    grid.innerHTML = rows.map(([label, value]) =>
+      `<div class="trail-stat"><span class="trail-label">${escapeHtml(label)}</span><span class="trail-value">${escapeHtml(String(value))}</span></div>`
     ).join('');
-    document.getElementById('section-trail-data').open = true;
+    card.appendChild(grid);
   }
 
-  // Risk factors
-  const rfEl = document.getElementById('content-risk-factors');
-  rfEl.innerHTML = '';
-  if (report.risk_factors && report.risk_factors.length) {
-    rfEl.innerHTML = '<ul>' + report.risk_factors.map(r => `<li>${escapeHtml(r)}</li>`).join('') + '</ul>';
-    document.getElementById('section-risk-factors').open = true;
+  // Helper: append a collapsible section
+  function addSection(title, populate) {
+    const el = document.createElement('details');
+    el.innerHTML = `<summary>${title}</summary><div class="section-content"></div>`;
+    const content = el.querySelector('.section-content');
+    const hasContent = populate(content);
+    if (hasContent) card.appendChild(el);
   }
 
-  // Reasoning
-  if (report.reasoning) {
-    renderMarkdown(document.getElementById('content-reasoning'), report.reasoning);
-    document.getElementById('section-reasoning').open = true;
-  }
+  addSection('Risk Factors', el => {
+    if (!report.risk_factors?.length) return false;
+    el.innerHTML = '<ul>' + report.risk_factors.map(r => `<li>${escapeHtml(r)}</li>`).join('') + '</ul>';
+    return true;
+  });
 
-  // Time windows
-  if (report.time_windows) renderMarkdown(document.getElementById('content-time-windows'), report.time_windows);
+  addSection('Reasoning', el => {
+    if (!report.reasoning) return false;
+    renderMarkdown(el, report.reasoning);
+    return true;
+  });
 
-  // Elevation context
-  if (report.elevation_context) renderMarkdown(document.getElementById('content-elevation'), report.elevation_context);
+  addSection('Time Windows', el => {
+    if (!report.time_windows) return false;
+    renderMarkdown(el, report.time_windows);
+    return true;
+  });
 
-  // Alternatives
-  const altEl   = document.getElementById('content-alternatives');
-  const alts    = report.alternatives || [];
-  altEl.innerHTML = '';
-  if (alts.length) {
-    const md = alts.map(a => {
-      const dist = a.distance_km ? ` — ${a.distance_km.toFixed(1)} km` : '';
-      return `- ${a.name}${dist}`;
-    }).join('\n');
-    renderMarkdown(altEl, md);
-  } else if (verdict === 'CAUTION' || verdict === 'NO-GO') {
-    altEl.textContent = 'No alternatives found within 10 km.';
-  }
+  addSection('Elevation Context', el => {
+    if (!report.elevation_context) return false;
+    renderMarkdown(el, report.elevation_context);
+    return true;
+  });
 
-  // Physical difficulty
-  const diff = report.physical_difficulty || {};
-  if (diff.level) {
-    document.getElementById('content-difficulty').textContent = `${diff.level} — ${diff.description}`;
-    document.getElementById('section-difficulty').open = true;
-  }
+  addSection('Physical Difficulty', el => {
+    const diff = report.physical_difficulty || {};
+    if (!diff.level) return false;
+    el.textContent = `${diff.level} — ${diff.description}`;
+    return true;
+  });
 
-  // Estimated time
-  const ht = report.hiking_time || {};
-  if (ht.estimated_time_str) {
-    let htText = `Estimated: ${ht.estimated_time_str}`;
-    if (ht.sunset_time) htText += `\nSunset: ${ht.sunset_time}  |  Latest start: ${ht.latest_start_time}`;
-    document.getElementById('content-hiking-time').textContent = htText;
-    document.getElementById('section-hiking-time').open = true;
-  }
+  addSection('Estimated Time', el => {
+    const ht = report.hiking_time || {};
+    if (!ht.estimated_time_str) return false;
+    let txt = `Estimated: ${ht.estimated_time_str}`;
+    if (ht.sunset_time) txt += `\nSunset: ${ht.sunset_time}  |  Latest start: ${ht.latest_start_time}`;
+    el.textContent = txt;
+    return true;
+  });
 
-  // Refuges & shelters
-  const refs = report.refuges || [];
-  const refEl = document.getElementById('content-refuges');
-  refEl.innerHTML = '';
-  if (refs.length) {
+  addSection('Alternatives', el => {
+    const alts = report.alternatives || [];
+    if (alts.length) {
+      const md = alts.map(a => {
+        const dist = a.distance_km ? ` — ${a.distance_km.toFixed(1)} km` : '';
+        return `- ${a.name}${dist}`;
+      }).join('\n');
+      renderMarkdown(el, md);
+      return true;
+    }
+    if (verdict === 'CAUTION' || verdict === 'NO-GO') {
+      el.textContent = 'No alternatives found within 10 km.';
+      return true;
+    }
+    return false;
+  });
+
+  addSection('Refuges & Shelters', el => {
+    const refs = report.refuges || [];
+    if (!refs.length) return false;
     const md = refs.map(r => `- **${r.name}** (${r.type.replace('_', ' ')}) — ${r.distance_km} km`).join('\n');
-    renderMarkdown(refEl, md);
-    document.getElementById('section-refuges').open = true;
-  }
+    renderMarkdown(el, md);
+    return true;
+  });
+
+  wrapper.appendChild(card);
+  messagesEl.appendChild(wrapper);
+  scrollToBottom();
 }
 
 // ── Utilities ────────────────────────────────────────────────────────────────

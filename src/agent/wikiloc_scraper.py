@@ -470,7 +470,8 @@ def scrape_geojson(url: str, timeout_ms: int = 25000) -> tuple[dict, dict]:
         ScraperError: If no GeoJSON strategy succeeds.
     """
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, channel="chrome")
+        #browser = p.chromium.launch(headless=True, channel="chrome")
+        browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(
                 user_agent=_USER_AGENT,

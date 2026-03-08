@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IntelliTrail — Presentation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0e0f;
+    --surface:  #111618;
+    --border:   #1e2a2d;
+    --accent:   #10b981;
+    --accent2:  #34d399;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --ai:       #10b981;
+    --human:    #3b82f6;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── Slides wrapper ── */
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 6vw;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity .45s ease, transform .45s ease;
+    pointer-events: none;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 1px solid var(--muted);
+    cursor: pointer;
+    transition: background .25s, transform .25s;
+  }
+  .dot.active { background: var(--accent); transform: scale(1.4); }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    padding: .4rem .9rem;
+    border-radius: 6px;
+    font-size: .8rem;
+    letter-spacing: .05em;
+    transition: border-color .2s, color .2s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Slide counter ── */
+  .counter {
+    position: fixed;
+    top: 2rem;
+    right: 2.5rem;
+    font-size: .75rem;
+    color: var(--muted);
+    letter-spacing: .1em;
+  }
+
+  /* ── Accent line ── */
+  .accent-line {
+    width: 3rem; height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin-bottom: 2rem;
+  }
+
+  /* ──────────────────────────────
+     SLIDE 1 — Title
+  ────────────────────────────── */
+  .s1-eyebrow {
+    font-size: .75rem;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .s1-title {
+    font-size: clamp(3.5rem, 8vw, 6rem);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.5rem;
+  }
+
+  .s1-sub {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--muted);
+    max-width: 540px;
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+  }
+
+  .tag {
+    display: inline-block;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 999px;
+    padding: .35rem 1rem;
+    font-size: .75rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ──────────────────────────────
+     SLIDE 2 — Problem / Solution
+  ────────────────────────────── */
+  .s2-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+  }
+
+  .card-label {
+    font-size: .7rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: .75rem;
+    color: var(--text);
+  }
+
+  .card p {
+    font-size: .9rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  .verdict-row {
+    display: flex;
+    gap: .6rem;
+    margin-top: 1.2rem;
+  }
+
+  .badge {
+    padding: .3rem .8rem;
+    border-radius: 8px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
+  .badge.go     { background: #052e16; color: #4ade80; border: 1px solid #166534; }
+  .badge.caution{ background: #422006; color: #fb923c; border: 1px solid #92400e; }
+  .badge.nogo   { background: #3b0a0a; color: #f87171; border: 1px solid #991b1b; }
+
+  /* ──────────────────────────────
+     SLIDE 3 — Architecture
+  ────────────────────────────── */
+  .arch-wrap {
+    width: 100%;
+    max-width: 820px;
+  }
+
+  .slide-h {
+    font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: .5rem;
+  }
+
+  .slide-sub {
+    font-size: .9rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+  }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    margin-bottom: 2rem;
+  }
+
+  .flow-node {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .6rem 1rem;
+    font-size: .78rem;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1.3;
+  }
+
+  .flow-node .fn-label { color: var(--muted); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; }
+  .flow-node .fn-name  { color: var(--text); font-weight: 600; }
+
+  .flow-arrow {
+    color: var(--border);
+    padding: 0 .4rem;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .tools-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+  }
+
+  .tool-card .tc-name {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: .4rem;
+  }
+
+  .tool-card .tc-desc {
+    font-size: .78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* ──────────────────────────────
+     SLIDE 4 — Stack
+  ────────────────────────────── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100%;
+    max-width: 820px;
+  }
+
+  .stack-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.2rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+
+  .stack-item .si-cat {
+    font-size: .65rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .stack-item .si-name {
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .stack-item .si-desc {
+    font-size: .75rem;
+    color: var(--muted);
+  }
+
+  /* ──────────────────────────────
+     SLIDE 5 — Bar Chart
+  ────────────────────────────── */
+  .chart-wrap {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  .chart-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    margin-top: 2rem;
+  }
+
+  .chart-row {}
+
+  .chart-row-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .8rem;
+    color: var(--muted);
+    margin-bottom: .55rem;
+  }
+
+  .chart-row-label .cr-name { font-weight: 600; color: var(--text); }
+
+  .bar-track {
+    height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+  }
+
+  .bar-ai {
+    background: linear-gradient(90deg, #059669, #10b981);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: .5rem;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #fff;
+    transition: width 1s cubic-bezier(.22,.61,.36,1);
+    width: 0;
+  }
+
+  .bar-human {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding-left: .5rem;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #fff;
+    transition: width 1s cubic-bezier(.22,.61,.36,1);
+    width: 0;
+  }
+
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2.2rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .78rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-dot.ai    { background: var(--ai); }
+  .legend-dot.human { background: var(--human); }
+
+  /* ── POC disclaimer ── */
+  .poc-tag {
+    position: fixed;
+    top: 2rem;
+    left: 2.5rem;
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: .25rem .7rem;
+    border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<div class="poc-tag">Proof of Concept</div>
+<div class="counter"><span id="cur">1</span> / <span id="tot"></span></div>
+
+<div class="deck" id="deck">
+
+  <!-- ── SLIDE 1 — Title ── -->
+  <section class="slide active" data-index="0">
+    <div class="s1-eyebrow">Ironhack AI Engineering — Final Project</div>
+    <div class="s1-title">IntelliTrail</div>
+    <div class="s1-sub">
+      A conversational AI agent that gives mountain hikers in Spain
+      a <strong style="color:var(--text)">GO / CAUTION / NO-GO</strong> safety verdict
+      before they leave the trailhead.
+    </div>
+    <span class="tag">Proof of concept &nbsp;·&nbsp; Not production-ready</span>
+  </section>
+
+  <!-- ── SLIDE 2 — Problem / What it does ── -->
+  <section class="slide" data-index="1">
+    <div style="width:100%;max-width:820px">
+      <div class="accent-line"></div>
+      <div class="slide-h">The Problem</div>
+      <div class="slide-sub">Hikers rely on fragmented data sources to assess mountain safety.</div>
+      <div class="s2-grid">
+        <div class="card">
+          <div class="card-label">Input</div>
+          <div class="card-title">Any way you describe a route</div>
+          <p>Route name, Wikiloc URL, GPX file upload, or voice. The agent resolves it automatically.</p>
+        </div>
+        <div class="card">
+          <div class="card-label">Output</div>
+          <div class="card-title">Structured safety verdict</div>
+          <p>Live AEMET weather, mountain bulletin, snow & avalanche risk, elevation profile, gear advice, and safe time windows.</p>
+          <div class="verdict-row">
+            <span class="badge go">GO</span>
+            <span class="badge caution">CAUTION</span>
+            <span class="badge nogo">NO-GO</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">Safety rule</div>
+          <div class="card-title">Deterministic override</div>
+          <p>If the track exceeds the seasonal snow line and the avalanche bulletin is unavailable, verdict is forced to CAUTION regardless of the LLM output.</p>
+        </div>
+        <div class="card">
+          <div class="card-label">On CAUTION / NO-GO</div>
+          <div class="card-title">Alternatives & refuges</div>
+          <p>Searches OpenStreetMap and Wikiloc for nearby trails within 10 km, plus mountain refuges.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 3 — Architecture ── -->
+  <section class="slide" data-index="2">
+    <div class="arch-wrap">
+      <div class="accent-line"></div>
+      <div class="slide-h">How it works</div>
+      <div class="slide-sub">LangGraph ReAct agent with intent routing and full session memory.</div>
+
+      <div class="flow">
+        <div class="flow-node">
+          <div class="fn-label">User</div>
+          <div class="fn-name">Message / GPX / Voice</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="fn-label">gpt-4o-mini</div>
+          <div class="fn-name">Intent Router</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="fn-label">gpt-4o · ReAct</div>
+          <div class="fn-name">Chat Agent</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node">
+          <div class="fn-label">FastAPI SSE</div>
+          <div class="fn-name">Stream → Browser</div>
+        </div>
+      </div>
+
+      <div class="tools-row">
+        <div class="tool-card">
+          <div class="tc-name">search_routes</div>
+          <div class="tc-desc">SerpAPI + Playwright scrape of Wikiloc — returns up to 3 candidate trails with stats.</div>
+        </div>
+        <div class="tool-card">
+          <div class="tc-name">analyze_route</div>
+          <div class="tc-desc">Full pipeline: geometry → AEMET weather → LLM verdict → alternatives on Overpass/Wikiloc.</div>
+        </div>
+        <div class="tool-card">
+          <div class="tc-name">rag_query</div>
+          <div class="tc-desc">Semantic search over alpine safety PDFs indexed in Pinecone. Answers gear & technique questions.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 4 — Tech Stack ── -->
+  <section class="slide" data-index="3">
+    <div style="width:100%;max-width:820px">
+      <div class="accent-line"></div>
+      <div class="slide-h">Tech Stack</div>
+      <div class="slide-sub" style="margin-bottom:2rem">Everything exercised during the bootcamp, wired together.</div>
+      <div class="stack-grid">
+        <div class="stack-item">
+          <span class="si-cat">Agent</span>
+          <span class="si-name">LangGraph + LangChain</span>
+          <span class="si-desc">StateGraph, MemorySaver, ReAct loop, tool binding, multimodal</span>
+        </div>
+        <div class="stack-item">
+          <span class="si-cat">LLM</span>
+          <span class="si-name">OpenAI GPT-4o</span>
+          <span class="si-desc">Agent reasoning + structured verdict output via JSON schema</span>
+        </div>
+        <div class="stack-item">
+          <span class="si-cat">Weather</span>
+          <span class="si-name">AEMET OpenData</span>
+          <span class="si-desc">Municipal forecast, mountain bulletin, snow & avalanche data</span>
+        </div>
+        <div class="stack-item">
+          <span class="si-cat">Scraping</span>
+          <span class="si-name">Playwright / Chromium</span>
+          <span class="si-desc">Headless browser — extracts GeoJSON & stats from Wikiloc</span>
+        </div>
+        <div class="stack-item">
+          <span class="si-cat">Vector store</span>
+          <span class="si-name">Pinecone + RAG</span>
+          <span class="si-desc">Alpine safety PDFs — chunked, embedded, retrieved at query time</span>
+        </div>
+        <div class="stack-item">
+          <span class="si-cat">Infra</span>
+          <span class="si-name">FastAPI + Docker</span>
+          <span class="si-desc">SSE streaming, deployed on Synology NAS via Docker Compose</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 5 — AI vs Human ── -->
+  <section class="slide" data-index="4" id="chart-slide">
+
+    <div class="chart-wrap">
+      <div class="accent-line"></div>
+      <div class="slide-h">Who built what?</div>
+      <div class="slide-sub">Breakdown of AI vs. human contribution by area.</div>
+
+      <div class="chart-rows">
+        <div class="chart-row">
+          <div class="chart-row-label">
+            <span class="cr-name">LangGraph agent</span>
+            <span>AI 90% &nbsp;·&nbsp; Me 10%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-ai"   data-pct="90"></div>
+            <div class="bar-human" data-pct="10"></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-row-label">
+            <span class="cr-name">Functionality &amp; integration</span>
+            <span>AI 20% &nbsp;·&nbsp; Me 80%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-ai"    data-pct="20"></div>
+            <div class="bar-human"  data-pct="80"></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-row-label">
+            <span class="cr-name">Frontend</span>
+            <span>AI 100% &nbsp;·&nbsp; Me 0%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-ai"    data-pct="100"></div>
+            <div class="bar-human"  data-pct="0"></div>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-row-label">
+            <span class="cr-name">Deployment</span>
+            <span>AI 30% &nbsp;·&nbsp; Me 70%</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-ai"    data-pct="30"></div>
+            <div class="bar-human"  data-pct="70"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot ai"></div> Claude (AI)</div>
+        <div class="legend-item"><div class="legend-dot human"></div> Me</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 6 — Takeaways & Improvements ── -->
+  <section class="slide" data-index="5">
+    <div style="width:100%;max-width:820px">
+      <div class="accent-line"></div>
+      <div class="slide-h">Takeaways & Next Steps</div>
+      <div class="slide-sub">What worked, what didn't, and where it could go.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.4rem">
+        <div class="card">
+          <div class="card-label">Takeaway 1</div>
+          <div class="card-title">AI accelerates structure, not judgment</div>
+          <p>The agent scaffolding, boilerplate, and frontend came fast. The hard work was domain decisions — what data matters, how to weight it, when to override the LLM.</p>
+        </div>
+        <div class="card">
+          <div class="card-label">Takeaway 2</div>
+          <div class="card-title">Deterministic rules beat pure LLM for safety</div>
+          <p>Trusting the model blindly for safety-critical verdicts is risky. The snow-line override was a deliberate choice to keep a human-defined rule in the loop.</p>
+        </div>
+        <div class="card">
+          <div class="card-label">Takeaway 3</div>
+          <div class="card-title">Deployment is where theory meets reality</div>
+          <p>Containerising an agent with a headless browser, scraping, and vector store taught more about systems than any isolated tutorial.</p>
+        </div>
+        <div class="card" style="border-color:#1e3a2d">
+          <div class="card-label" style="color:var(--accent)">Improvements</div>
+          <div class="card-title">Where it could go next</div>
+          <p style="font-size:.82rem">
+            &middot; Multi-day trip planning with date-aware forecasts<br/>
+            &middot; Real user accounts &amp; saved routes<br/>
+            &middot; Expand beyond Spain (OpenMeteo + other bulletins)
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SLIDE 7 — Thanks ── -->
+  <section class="slide" data-index="5" id="thanks-slide">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2rem;text-align:center">
+      <div class="accent-line" style="margin-bottom:0"></div>
+      <div class="slide-h" style="font-size:clamp(2rem,5vw,3.2rem)">That's all folks, Thanks!</div>
+      <p style="color:var(--muted);font-size:1rem;max-width:440px;line-height:1.6">
+        438.187 tokens were wasted during the development of this project<br/><br/>
+        Happy to answer any questions — about the project, the stack, or the AI workflow behind it.
+      </p>
+      <img src="meme.jpeg" alt="meme"
+           style="max-height:42vh;max-width:72%;border-radius:14px;border:1px solid var(--border);object-fit:contain;" />
+    </div>
+  </section>
+
+</div>
+
+<!-- Navigation -->
+<nav>
+  <button class="nav-btn" id="prev">&#8592; prev</button>
+  <div id="dots"></div>
+  <button class="nav-btn" id="next">next &#8594;</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsEl  = document.getElementById('dots');
+  const curEl   = document.getElementById('cur');
+  const totEl   = document.getElementById('tot');
+  let current   = 0;
+  let animating = false;
+  let chartAnimated = false;
+
+  // Build dots
+  totEl.textContent = slides.length;
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => go(i));
+    dotsEl.appendChild(d);
+  });
+
+  function go(index) {
+    if (animating || index === current || index < 0 || index >= slides.length) return;
+    animating = true;
+
+    slides[current].classList.add('exit');
+    slides[current].classList.remove('active');
+
+    setTimeout(() => {
+      slides[current].classList.remove('exit');
+      current = index;
+      slides[current].classList.add('active');
+
+      // Update UI
+      curEl.textContent = current + 1;
+      document.querySelectorAll('.dot').forEach((d, i) => {
+        d.classList.toggle('active', i === current);
+      });
+
+      // Animate chart on slide 5 (index 4)
+      if (current === 4 && !chartAnimated) {
+        setTimeout(animateChart, 120);
+        chartAnimated = true;
+      }
+
+      animating = false;
+    }, 280);
+  }
+
+  function animateChart() {
+    document.querySelectorAll('.bar-ai, .bar-human').forEach(bar => {
+      const pct = bar.dataset.pct;
+      bar.style.width = pct + '%';
+      if (parseInt(pct) < 12) bar.style.justifyContent = 'flex-start'; // tiny label
+      if (parseInt(pct) === 0) bar.textContent = '';
+      else bar.textContent = pct + '%';
+    });
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft')                   go(current - 1);
+  });
+</script>
+</body>
+</html>

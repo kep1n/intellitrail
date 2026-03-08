@@ -41,6 +41,11 @@ app = FastAPI(title="Intellitrail")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+@app.get("/health")
+async def healthcheck():
+    return {"status": "ok"}
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_ui():
     with open("static/index.html", encoding="utf-8") as f:
@@ -129,6 +134,17 @@ async def chat(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/clear-gpx")
+async def clear_gpx(request: Request):
+    """Clear the stored GPX bytes from the LangGraph checkpoint for this thread."""
+    body = await request.json()
+    thread_id = body.get("thread_id")
+    if thread_id:
+        config = {"configurable": {"thread_id": thread_id}}
+        web_app.update_state(config, {"gpx_input": None})
+    return {"ok": True}
 
 
 @app.post("/api/transcribe")
