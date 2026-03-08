@@ -1,5 +1,7 @@
 # IntelliTrail
 
+![Intellitrail Logo](./imgs/intellitrail.png)
+
 > **Proof of concept** — built to fiddle with the concepts covered during the Ironhack AI Engineering bootcamp: LLM agents, RAG, tool use, streaming APIs, web scraping, geospatial processing, and containerised deployment. Not production-ready.
 
 IntelliTrail is a conversational mountaineering safety assistant that gives hikers a **GO / CAUTION / NO-GO** verdict before heading into the Spanish mountains. Users can describe a route by name, paste a Wikiloc URL, upload a GPX file, or speak — the agent resolves the location, pulls live weather and snow data from AEMET, and responds with a structured safety report.
